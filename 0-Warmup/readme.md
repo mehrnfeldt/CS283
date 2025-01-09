@@ -17,10 +17,13 @@ Please provide answers to these questions using markdown notation and place them
 
 
 3. Please provide a link to the repository you are using for this class.
+
 https://github.com/mehrnfeldt/CS283
 
 4. Briefly describe what you want to get out of this class.
-I would like to learn more about operatings systems. 
+
+I would like to learn more about operatings systems and how this new knowledge would make me a better programmer.  
 
 5. Briefly describe any concerns you might be having with being successful in this class (if any).
+
 I think I am concerned with the layout and systems used in this class. I never really used GitHub for class assignments and using both Tux and GitHub for assignments concerns me slightly. I believe I am not quite fully confident with how to submit assignments yet. 
