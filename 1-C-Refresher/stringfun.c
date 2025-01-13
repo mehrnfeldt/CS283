@@ -51,8 +51,6 @@ int setup_buff(char *buff, char *user_str, int len){
     return char_count;  // Return user string length
 
 }
-	
-
 
 void print_buff(char *buff, int len){
     printf("Buffer:  ");
@@ -106,7 +104,7 @@ void reverse_string(char *input_string, int str_len) {
     }
 }
 
-void replace_string(char *buff, int *user_str_len, int buff_size, char *target, char *replacement) {
+void replace_string(char *buff, int *user_str_len, char *target, char *replacement) {
     char *pos = strstr(buff, target);  // Find the first occurrence of the target
     if (pos != NULL) {
         int target_len = strlen(target);
@@ -246,7 +244,7 @@ int main(int argc, char *argv[]){
     	char *target = argv[3];
     	char *replacement = argv[4];
 
-    	replace_string(buff, &user_str_len, BUFFER_SZ, target, replacement);
+    	replace_string(buff, &user_str_len, target, replacement);
 
     	// Print string
     	printf("Modified String: ");
@@ -280,4 +278,4 @@ int main(int argc, char *argv[]){
 //          is a good practice, after all we know from main() that 
 //          the buff variable will have exactly 50 bytes?
 //  
-//          PLACE YOUR ANSWER HERE
+//         Providing both the pointer and the length to helper functions is a good practice because it makes the function more robust and easier to maintain. In this case the buffer size is always 50 bytes but explicitly passing the length ensures the code can be debugged easier.
