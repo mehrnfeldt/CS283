@@ -13,40 +13,43 @@ int  setup_buff(char *, char *, int);
 //prototypes for functions to handle required functionality
 int  count_words(char *, int, int);
 //add additional prototypes here
-
+void reverse_string(char *, int);
 
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
+    if (buff == NULL || user_str == NULL){
+	    return -2;
+	}
     char *dest = buff;  // Pointer to the buffer
     char *src = user_str;  // Pointer to the user input string
     int char_count = 0;
-    int word_flag = 0;  // Tracks if we are inside a word
+    int word_flag = 0;  
 
     while (*src != '\0' && char_count < len) {
         if (*src != ' ' && *src != '\t') {
             *dest++ = *src;
             char_count++;
-            word_flag = 1;  // Mark we are inside a word
+            word_flag = 1; 
         } else if (word_flag) {
-            // Only add a single space between words
             *dest++ = ' ';
             char_count++;
-            word_flag = 0;  // Reset flag for new word
+            word_flag = 0;  
         }
         src++;
     }
 
     if (char_count >= len) {
-        return -1;  // User string is too long
+        return -1;  
     }
 
-    // Fill the remaining buffer space with dots
+    // Fill remaining buffer space with dots
     while (char_count < len) {
         *dest++ = '.';
         char_count++;
     }
+  
+    return char_count;  // Return user string length
 
-    return char_count;  // Return the user string length
 }
 	
 
@@ -83,20 +86,61 @@ int count_words(char *buff, int len, int str_len){
             }
         }
     }
-
     return word_count;
 }
 
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
 
-int main(int argc, char *argv[]){
+// Function to reverse a string in place
+void reverse_string(char *input_string, int str_len) {
+    char *start = input_string;
+    char *end = input_string + str_len - 1;
 
+    while (start < end) {
+        char temp = *start;
+        *start = *end;
+        *end = temp;
+
+        start++;
+        end--;
+    }
+}
+
+void replace_string(char *buff, int *user_str_len, int buff_size, char *target, char *replacement) {
+    char *pos = strstr(buff, target);  // Find the first occurrence of the target
+    if (pos != NULL) {
+        int target_len = strlen(target);
+        int replacement_len = strlen(replacement);
+        int new_length = *user_str_len - target_len + replacement_len;
+
+        if (replacement_len > target_len) {
+            for (int i = *user_str_len - 1; i >= (pos - buff + target_len); i--) {
+                *(buff + i + (replacement_len - target_len)) = *(buff + i);
+            }
+            *user_str_len = new_length;  // Update the string length after replacement
+        }
+
+        // Copy the replacement word into the buffer
+        for (int i = 0; i < replacement_len; i++) {
+            *(pos + i) = replacement[i];
+        }
+
+        // fill the remaining part with '.'
+        if (replacement_len < target_len) {
+            for (int i = *user_str_len - 1; i >= (*user_str_len - (target_len - replacement_len)); i--) {
+                *(buff + i) = '.';
+            }
+            *user_str_len = new_length;  // Update the string length after replacement
+        }
+    }
+}
+
+int main(int argc, char *argv[]){
     char *buff;             //placehoder for the internal buffer
     char *input_string;     //holds the string provided by the user on cmd line
     char opt;               //used to capture user option from cmd line
     int  rc;                //used for return codes
     int  user_str_len;      //length of user supplied string
-
     //TODO:  #1. WHY IS THIS SAFE, aka what if arv[1] does not exist?
     //      If argc < 2, then argv[1] would not exist and would be unsafe. The second condition makes sure that the first argument after the program's name is an option flag starting with a -. If either condition fails, it safely exits with an error message.
     if ((argc < 2) || (*argv[1] != '-')){
@@ -122,6 +166,7 @@ int main(int argc, char *argv[]){
     }
 
     input_string = argv[2]; //capture the user input string
+
 
     //TODO:  #3 Allocate space for the buffer using malloc and
     //          handle error if malloc fails by exiting with a 
@@ -152,19 +197,18 @@ int main(int argc, char *argv[]){
 
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
         case 'r': {
- 	// Reverse string functionality
-    	for (int i = 0; i < user_str_len / 2; i++) {
-        	char temp = *(buff + i);
-        	*(buff + i) = *(buff + user_str_len - 1 - i);
-        	*(buff + user_str_len - 1 - i) = temp;
-    	}
-    	printf("Reversed String: ");
-    	for (int i = 0; i < user_str_len; i++) {
-        	putchar(*(buff + i));
-    	}
-    	putchar('\n');
-    	break;
-}
+    	// Reverse the string in the buffer
+		reverse_string(buff, user_str_len);
+    		// Print the reversed user string
+    		printf("Reversed String: ");
+    		for (int i = 0; i < user_str_len; i++) {
+        		if(*(buff+i) != '.'){
+	    			putchar(*(buff + i));
+			} 
+    		}
+    		putchar('\n');
+    		break;
+	}
 	case 'w': {
     	// Print words and their lengths
     	printf("Word Print\n----------\n");
@@ -172,25 +216,48 @@ int main(int argc, char *argv[]){
     	int char_count = 0;
 
     	for (int i = 0; i < user_str_len; i++) {
-        	if (*(buff + i) == ' ' || i == user_str_len - 1) {
-            		if (i == user_str_len - 1 && *(buff + i) != ' ') {
-                		char_count++;
-            }
-            printf("%d. ", word_count++);
-            for (int j = i - char_count; j < i; j++) {
-                putchar(*(buff + j));
-            }
-            printf(" (%d)\n", char_count);
-            char_count = 0;
-        } else {
-            char_count++;
-        }
-    }
-    break;
-}
-	
-	
-	
+        	if (*(buff + i) == ' ' || *(buff + i) == '.' || i == user_str_len - 1) {
+            	// If we're at the end of a word, check if there's a valid word
+            	if (char_count > 0) {
+                	printf("%d. ", word_count++);
+
+                	for (int j = i - char_count; j < i; j++) {
+                    		if (*(buff + j) != '.') {
+                        		putchar(*(buff + j));
+                    		}
+                	}
+
+                	printf(" (%d)\n", char_count);
+            	}
+            	char_count = 0; // Reset word length for the next word
+   	     } else if (*(buff + i) != '.') {
+        	    char_count++; // Count the character as part of the word
+        	}
+    	}	
+    	break;
+	}
+	// Implement the -x case for string replacement
+	case 'x': {
+    	if (argc < 5) {
+        	printf("Error: Not enough arguments for -x flag\n");
+       	 	exit(1);
+    	}
+
+    	char *target = argv[3];
+    	char *replacement = argv[4];
+
+    	replace_string(buff, &user_str_len, BUFFER_SZ, target, replacement);
+
+    	// Print string
+    	printf("Modified String: ");
+    	for (int i = 0; i < user_str_len; i++) {
+    		if(*(buff+i) != '.'){
+            		putchar(*(buff + i));
+        	}
+    	}
+    	putchar('\n');
+    	break;
+	}	
 	
 	
 	
@@ -198,11 +265,12 @@ int main(int argc, char *argv[]){
         default:
             usage(argv[0]);
             exit(1);
-    }
+    	}
 
     //TODO:  #6 Dont forget to free your buffer before exiting
-    free(buff);
+    
     print_buff(buff,BUFFER_SZ);
+    free(buff);
     exit(0);
 }
 
