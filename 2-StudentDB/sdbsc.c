@@ -59,7 +59,26 @@ int open_db(char *dbFile, bool should_truncate){
  *  console:  Does not produce any console I/O used by other functions
  */
 int get_student(int fd, int id, student_t *s){
-    return NOT_IMPLEMENTED_YET;
+	if(id < 1 || id > 100000){
+	    return SRCH_NOT_FOUND;
+	}
+
+	off_t offset = id * sizeof(student_t);
+	if (lseek(fd, offset, SEEK_SET)==-1){
+		return ERR_DB_FILE;
+	}
+	
+	if (read(fd, s, sizeof(student_t)) != sizeof(student_t)){
+		return ERR_DB_FILE;
+	}
+
+	if (memcmp(s, &EMPTY_STUDENT_RECORD, sizeof(student_t)) == 0){
+		return SRCH_NOT_FOUND;
+	}
+
+	return NO_ERROR;
+	
+
 }
 
 /*
@@ -144,8 +163,23 @@ int del_student(int fd, int id){
  *            
  */
 int count_db_records(int fd){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    //printf(M_NOT_IMPL);
+    student_t student;
+    int recordCount=0;
+    lseek(fd, 0, SEEK_SET);
+
+    while(read(fd, &student, sizeof(student_t)) == sizeof(student_t)){
+	    if(memcmp(&student, &EMPTY_STUDENT_RECORD, sizeof(student_t)) != 0){
+		    recordCount ++;
+	}}
+    if (recordCount == 0){
+	    printf(M_DB_EMPTY);
+    } else {
+	    printf(M_DB_RECORD_CNT, recordCount);
+	   }
+    return recordCount;
+
+    //return NOT_IMPLEMENTED_YET;
 }
 
 /*
