@@ -77,8 +77,6 @@ int get_student(int fd, int id, student_t *s){
 	}
 
 	return NO_ERROR;
-	
-
 }
 
 /*
@@ -107,8 +105,42 @@ int get_student(int fd, int id, student_t *s){
  *            
  */
 int add_student(int fd, int id, char *fname, char *lname, int gpa){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    //printf(M_NOT_IMPL);
+    struct student student;
+    memset(&student, 0, sizeof(student));
+
+    off_t offset = id * sizeof(struct student);
+    if (lseek (fd, offset, SEEK_SET) == -1){
+	    printf(M_ERR_DB_READ);
+	    return ERR_DB_FILE;
+    }
+
+    struct student existing;
+    if (read(fd, &existing, sizeof(existing)) == -1){
+	    printf(M_ERR_DB_READ);
+	    return ERR_DB_FILE;
+    }
+
+    if (memcmp(&existing, &student, sizeof(student)) != 0){
+	    printf((M_ERR_DB_ADD_DUP, id));
+	    return ERR_DB_OP;
+    }
+
+    student.id = id;
+    strncpy(student.fname, fname, sizeof(student.fname) -1);
+    strncpy(student.lname, lname, sizeof(student.lname) -1);
+    student.gpa = gpa;
+
+    if(lseek(fd, offset, SEEK_SET)==-1 || write(fd, &student, sizeof(student))== -1){
+	    printf(M_ERR_DB_WRITE);
+            return ERR_DB_FILE;
+    }
+
+    printf(M_STD_ADDED, id);
+    return NO_ERROR;
+    
+    
+    //return NOT_IMPLEMENTED_YET;
 }
 
 /*
