@@ -39,7 +39,7 @@ Please answer the following questions and submit in your repo for the second ass
     ```
     Can you think of any reason why the above implementation would be a **very bad idea** using the C programming language?  Specifically, address why the above code introduces a subtle bug that could be hard to identify at runtime? 
 
-    > **ANSWER:The subtle bug involves the function returning a pointer to a local variabe. Student is declared inside the function so when it is returned the memory location is invalid as the scope of student is local to the function. The student memory location is also stored on a stack which contributes to the wrror that occurs.  
+    > **ANSWER:**The subtle bug involves the function returning a pointer to a local variabe. Student is declared inside the function so when it is returned the memory location is invalid as the scope of student is local to the function. The student memory location is also stored on a stack which contributes to the wrror that occurs.  
 
 3. Another way the `get_student(...)` function could be implemented is as follows:
 
