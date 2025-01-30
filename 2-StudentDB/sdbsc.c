@@ -60,12 +60,13 @@ int open_db(char *dbFile, bool should_truncate){
  */
 int get_student(int fd, int id, student_t *s) {
     if (validate_range(id, 0) != NO_ERROR) {
-        return ERR_DB_OP;
+        return SRCH_NOT_FOUND;
     }
 
     off_t offset = (id) * sizeof(student_t);
     if (lseek(fd, offset, SEEK_SET) == -1) {
-        return ERR_DB_FILE;
+       printf(M_ERR_DB_READ);
+       return ERR_DB_FILE;
     }
 
     ssize_t bytes_read = read(fd, s, sizeof(student_t));
@@ -76,7 +77,7 @@ int get_student(int fd, int id, student_t *s) {
 
     if (bytes_read < (ssize_t)sizeof(student_t) || s->id == 0) {
         printf( M_STD_NOT_FND_MSG, id);
-	    return ERR_DB_OP;  
+	return SRCH_NOT_FOUND;  
     }
 
     return NO_ERROR; 
@@ -171,22 +172,17 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
  */
 int del_student(int fd, int id){
     student_t student;
-    off_t offset = (id) * sizeof(student_t);
+    int student_status = get_student(fd, id, &student);
 
-    if (lseek(fd, offset, SEEK_SET) == -1) {
-        printf(M_ERR_DB_READ);
+    if (student_status == ERR_DB_FILE) {
         return ERR_DB_FILE;
     }
-   
-    ssize_t bytesRead = read(fd, &student, sizeof(student));
-    if (bytesRead == -1){
-	printf(M_ERR_DB_READ);
-	return ERR_DB_FILE;
-    }else if (bytesRead < (ssize_t)sizeof(student) || student.id ==0){
-	printf(M_STD_NOT_FND_MSG, id);
+    if (student_status == SRCH_NOT_FOUND) {
+        printf(M_STD_NOT_FND_MSG, id);
         return ERR_DB_OP;
     }
-    
+
+    off_t offset = (id) * sizeof(student_t);
     if (lseek(fd, offset, SEEK_SET) == -1) {
         printf(M_ERR_DB_WRITE);
         return ERR_DB_FILE;
