@@ -336,7 +336,7 @@ int print_db(int fd){
  *            
  */
 void print_student(student_t *s){
-    if ( s == NULL || s->id == 0){
+    if (s == NULL || s->id == 0){
 	    printf(M_ERR_STD_PRINT);
 	    return;
     }
@@ -395,8 +395,44 @@ void print_student(student_t *s){
  *            
  */
 int compress_db(int fd){
-    printf(M_NOT_IMPL);
-    return fd;
+    int temp_fd = open(TMP_DB_FILE, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (temp_fd < 0) {
+        printf(M_ERR_DB_OPEN);
+        return ERR_DB_FILE;
+    }
+
+    student_t student;
+    off_t offset = 0;
+    
+    while (read(fd, &student, sizeof(student)) == sizeof(student)) {
+        if (memcmp(&student, &EMPTY_STUDENT_RECORD, sizeof(student)) != 0) {
+          
+	      	if (write(temp_fd, &student, sizeof(student)) != sizeof(student)) {
+                printf(M_ERR_DB_WRITE);
+                close(temp_fd);
+                return ERR_DB_FILE;
+            }
+        }
+        offset += sizeof(student);
+        lseek(fd, offset, SEEK_SET);
+    }
+
+    close(fd);
+    close(temp_fd);
+
+    if (rename(TMP_DB_FILE, DB_FILE) != 0) {
+        printf(M_ERR_DB_CREATE);
+        return ERR_DB_FILE;
+    }
+
+    int new_fd = open(DB_FILE, O_RDWR);
+    if (new_fd < 0) {
+        printf(M_ERR_DB_OPEN);
+        return ERR_DB_FILE;
+    }
+
+    printf(M_DB_COMPRESSED_OK);
+    return new_fd;
 }
 
 
