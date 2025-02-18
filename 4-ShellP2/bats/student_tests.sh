@@ -99,7 +99,7 @@ ls
 EOF
 
      stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefileshell_roadmap.mddsh2>dsh2>cmdloopreturned0"
+    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mdshell_roadmap.mddsh2>dsh2>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -114,7 +114,7 @@ EOF
 not_exists
 EOF
      stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="Executionfailed:Nosuchfileordirectorydsh2>dsh2>dsh2>cmdloopreturned0"
+    expected_output="Error:Commandnotfounddsh2>dsh2>dsh2>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -152,7 +152,7 @@ EOF
     echo "${stripped_output} -> ${expected_output}"
 
     [ "$stripped_output" = "$expected_output" ]
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 249 ]
 }
 
 @test "dragon command works as intended" {
@@ -192,7 +192,7 @@ EOF
 uname -s -r
 EOF
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="Linux5.15.0-121-genericdsh2>dsh2>cmdloopreturned0"
+    expected_output="Linux5.15.0-124-genericdsh2>dsh2>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -208,6 +208,87 @@ echo "hello,    world"
 EOF
     stripped_output=$(echo "$output" | tr -d '[:space:]')
     expected_output="hello,worlddsh2>dsh2>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+
+@test "successful return code for valid command" {
+    run ./dsh <<EOF
+cd
+rc
+EOF
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="dsh2>dsh2>0dsh2>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "return code of 2 for command that doesnt exist" {
+    run ./dsh <<EOF
+not_exsist
+rc
+EOF
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="Error:Commandnotfounddsh2>dsh2>dsh2>2dsh2>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "return code of 1 for a failed command" {
+    run ./dsh <<EOF
+cat not_exsist
+rc
+EOF
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="cat:not_exsist:Nosuchfileordirectorydsh2>dsh2>1dsh2>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "return code of 13 for permission denied" {
+    run ./dsh <<EOF
+./
+rc
+EOF
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="Error:Permissiondenieddsh2>dsh2>dsh2>13dsh2>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "return code of -1 for no commands" {
+    run ./dsh <<EOF 
+
+rc
+EOF
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="dsh2>warning:nocommandsprovideddsh2>-1dsh2>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"

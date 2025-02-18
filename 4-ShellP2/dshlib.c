@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include "dshlib.h"
+#include <errno.h>
 
 /*
  * Implement your exec_local_cmd_loop function by building a loop that prompts the 
@@ -51,6 +52,9 @@
  *  Standard Library Functions You Might Want To Consider Using (assignment 2+)
  *      fork(), execvp(), exit(), chdir()
  */
+
+int last_return_code = 0;
+
 int exec_local_cmd_loop()
 {
     char cmd_buff[SH_CMD_MAX];
@@ -75,87 +79,100 @@ int exec_local_cmd_loop()
             break;  
         }
 
-        cmd_buff[strcspn(cmd_buff, "\n")] = '\0';  // Remove trailing newline
-
-        memset(&cmd, 0, sizeof(cmd_buff_t)); // Initialize struct
+        cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
+        memset(&cmd, 0, sizeof(cmd_buff_t)); 
 
 	cmd.argc = 0;
 	char *ptr = cmd_buff;
         int in_quotes = 0;
 
         while (*ptr) {
-            // Skip leading spaces
             while (*ptr == ' ') ptr++;
-
-            if (*ptr == '\0') break;  // End of input
-
-            // Handle quoted strings
+            if (*ptr == '\0') break;  
             if (*ptr == '"') {
-                ptr++; // Skip opening quote
-                cmd.argv[cmd.argc++] = ptr; // Start of quoted argument
+                ptr++; 
+                cmd.argv[cmd.argc++] = ptr; 
                 in_quotes = 1;
-                
-                while (*ptr && !(*ptr == '"' && *(ptr - 1) != '\\')) ptr++; // Find closing quote
-
+                while (*ptr && !(*ptr == '"' && *(ptr - 1) != '\\')) ptr++; 
                 if (*ptr == '"') {
-                    *ptr = '\0'; // Null terminate the quoted argument
-                    ptr++; // Move past closing quote
+                    *ptr = '\0'; 
+                    ptr++;
                 }
             } else {
-                // Regular argument (not quoted)
                 cmd.argv[cmd.argc++] = ptr;
-                while (*ptr && *ptr != ' ') ptr++; // Find next space
+                while (*ptr && *ptr != ' ') ptr++; 
                 if (*ptr == ' ') {
-                    *ptr = '\0'; // Null terminate argument
-                    ptr++; // Move to next argument
+                    *ptr = '\0';
+                    ptr++; 
                 }
             }
-
-            if (cmd.argc >= CMD_ARGV_MAX - 1) break; // Prevent overflow
+            if (cmd.argc >= CMD_ARGV_MAX - 1) break; 
         }
 
         cmd.argv[cmd.argc] = NULL; 	
 	
 	if (cmd.argc > 0) {
             if (strcmp(cmd.argv[0], EXIT_CMD) == 0) {
-		exit(0);
-		break;  // Exit shell loop
+		exit(OK_EXIT);
+		break;  
             } else if (strcmp(cmd.argv[0], "cd") == 0) {
 		    
 		if (cmd.argc > 1) {
                     if (chdir(cmd.argv[1]) != 0 ){
 			    perror("cd failed");
+			    last_return_code = errno;
+		    }else{
+			    last_return_code = OK;
 		    }
 
 		}
 		continue;
+	    }else if (strcmp(cmd.argv[0], "rc") == 0){
+		    printf("%d\n", last_return_code);
+		    continue;
 	    }
 	}
 
 	if (strcmp(cmd_buff, "dragon") == 0) {
-            print_dragon();  // Call the function to print the dragon
-            continue;  // Go back to the prompt
+            print_dragon();
+	    last_return_code = OK;
+            continue;  
         }
 	if (strcmp(cmd_buff, "") == 0) {
-            printf("%s\n", CMD_WARN_NO_CMD);
+            printf("%s", CMD_WARN_NO_CMD);
+	    last_return_code= WARN_NO_CMDS; 
             continue;  
         }	
 	
-	// If not a built-in command, fork and execute external command
         pid_t pid = fork();
         if (pid == 0) {
-            // Child process
-            if (execvp(cmd.argv[0], cmd.argv) == -1) {
-                perror("Execution failed");
-                exit(ERR_EXEC_CMD);
-            }
-        } else if (pid > 0) {
-            // Parent process waits
-            wait(NULL);
-        } else {
-            perror("Fork failed");
-        }
-    }
+	    execvp(cmd.argv[0], cmd.argv);
+	    switch (errno){
+		    case ENOENT:
+			    fprintf(stderr, "Error: Command not found\n");
+			    break;
+		    case EACCES:
+			    fprintf(stderr, "Error: Permission denied\n");
+			    break;
+		    default:
+			    fprintf(stderr, "Error: Execution failed\n");
+			    break;
+	    }
+	    exit(errno);
+	}else if (pid > 0){
+		int status;
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status)){
+			last_return_code = WEXITSTATUS(status);
+		} else {
+		       last_return_code = -1;
+		}
+	} else {
+		perror("Fork failed");
+		last_return_code = errno;
+	}
+    }	
+	
 
     return OK;
 }
