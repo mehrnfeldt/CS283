@@ -154,6 +154,7 @@ int exec_local_cmd_loop()
 		    case EACCES:
 			    fprintf(stderr, "Error: Permission denied\n");
 			    break;
+	            
 		    default:
 			    fprintf(stderr, "Error: Execution failed\n");
 			    break;

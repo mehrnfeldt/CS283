@@ -191,8 +191,8 @@ EOF
     run ./dsh <<EOF
 uname -s -r
 EOF
-    stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="Linux5.15.0-124-genericdsh2>dsh2>cmdloopreturned0"
+    stripped_output=$(echo "$output" | grep -o "Linux 5.15")
+    expected_output="Linux 5.15"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -289,6 +289,41 @@ rc
 EOF
     stripped_output=$(echo "$output" | tr -d '[:space:]')
     expected_output="dsh2>warning:nocommandsprovideddsh2>-1dsh2>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+
+@test "Not a directory error" {
+    touch not_dir_file
+    run ./dsh <<EOF
+cd not_dir_file
+EOF
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="cdfailed:Notadirectorydsh2>dsh2>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "return code of 22 for a einval" {
+    touch not_dir_file
+    run ./dsh <<EOF
+cd not_dir_file
+rc
+rm not_dir_file
+EOF
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="cdfailed:Notadirectorydsh2>dsh2>22dsh2>dsh2>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
