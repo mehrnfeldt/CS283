@@ -141,7 +141,6 @@ int exec_local_cmd_loop()
             continue;
         }
 
-        // Handle single built-in commands before forking
         if (clist.num == 1) {
             cmd_buff_t *first_cmd = &clist.commands[0];
 
@@ -178,8 +177,7 @@ int exec_local_cmd_loop()
 
         for (int i = 0; i < clist.num; i++) {
 	    pid_t pid = fork();
-            if (pid == 0) {  // Child process
-                // Handle input from the previous command in the pipeline
+            if (pid == 0) {  
                 if (i > 0) {
                     if (dup2(pipefds[(i - 1) * 2], STDIN_FILENO) < 0) {
                         perror("dup2 input");
@@ -187,7 +185,6 @@ int exec_local_cmd_loop()
                     }
                 }
 
-                // Handle output redirection
                 if (i < clist.num - 1) {
                     if (dup2(pipefds[i * 2 + 1], STDOUT_FILENO) < 0) {
                         perror("dup2 output");
@@ -195,7 +192,6 @@ int exec_local_cmd_loop()
                     }
                 }
 
-                // Close all pipe file descriptors in the child
                 for (int j = 0; j < 2 * (clist.num - 1); j++) {
                     close(pipefds[j]);
              }
@@ -208,12 +204,10 @@ int exec_local_cmd_loop()
             }
         }
 
-        // Parent process: Close all pipes
         for (int i = 0; i < 2 * (clist.num - 1); i++) {
             close(pipefds[i]);
         }
 
-        // Parent waits for all child processes
         for (int i = 0; i < clist.num; i++) {
             int status;
             wait(&status);
