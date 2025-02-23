@@ -81,7 +81,7 @@ ls
 EOF
 
      stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefiledsh3>dsh3>cmdloopreturned0"
+    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -335,7 +335,7 @@ EOF
     run ./dsh <<EOF
 ls | cat
 EOF
-    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefiledsh3>dsh3>cmdloopreturned0"
+    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -395,6 +395,69 @@ echo |  grep test
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="dsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "pipe works for 8 commands" {
+    run ./dsh <<EOF
+ls | ls | ls | ls | ls | ls | ls | ls 
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "pipe fail for 9 commands" {
+    run ./dsh <<EOF
+ls | ls | ls | ls | ls | ls | ls | ls | ls
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="dsh3>error:pipinglimitedto8commandsdsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+
+@test "pipe first command runs when no second" {
+    run ./dsh <<EOF
+ls | 
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')    
+    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "pipe second command runs when no first" {
+    run ./dsh <<EOF
+ | ls 
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"

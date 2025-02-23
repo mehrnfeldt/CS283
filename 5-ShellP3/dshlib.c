@@ -133,7 +133,7 @@ int exec_local_cmd_loop()
 
         if (rc != OK) {
             if (rc == ERR_TOO_MANY_COMMANDS) {
-                printf("%s", CMD_ERR_PIPE_LIMIT);
+                printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
             } else {
                 fprintf(stderr, "Error: Failed to parse command line\n");
             }
