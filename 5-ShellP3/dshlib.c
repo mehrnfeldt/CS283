@@ -85,17 +85,33 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 
         cmd_buff_t *cmd = &clist->commands[clist->num];
         cmd->argc = 0;
+	cmd->input_file = NULL;
+        cmd->output_file = NULL;
 
         char *token;
         char *saveptr2;
         token = strtok_r(cmd_str, " ", &saveptr2);
-        while (token != NULL) {
-            if (cmd->argc >= CMD_ARGV_MAX - 1) {
-                return ERR_CMD_OR_ARGS_TOO_BIG;
-            }
-            cmd->argv[cmd->argc++] = token;
+    while (token != NULL) {
+        if (strcmp(token, "<") == 0) {
             token = strtok_r(NULL, " ", &saveptr2);
+            if (!token) return ERR_CMD_OR_ARGS_TOO_BIG;
+            cmd->input_file = token;
+        } else if (strcmp(token, ">>") == 0) {  
+            token = strtok_r(NULL, " ", &saveptr2);
+            if (!token) return ERR_CMD_OR_ARGS_TOO_BIG;
+            cmd->output_file = token;
+            cmd->append_mode = true;  
+        } else if (strcmp(token, ">") == 0) {  
+            token = strtok_r(NULL, " ", &saveptr2);
+            if (!token) return ERR_CMD_OR_ARGS_TOO_BIG;
+            cmd->output_file = token;
+            cmd->append_mode = false; 
+        } else {
+            if (cmd->argc >= CMD_ARGV_MAX - 1) return ERR_CMD_OR_ARGS_TOO_BIG;
+            cmd->argv[cmd->argc++] = token;
         }
+	    token = strtok_r(NULL, " ", &saveptr2);
+    }
         cmd->argv[cmd->argc] = NULL;
 
         clist->num++;
@@ -177,7 +193,34 @@ int exec_local_cmd_loop()
 
         for (int i = 0; i < clist.num; i++) {
 	    pid_t pid = fork();
-            if (pid == 0) {  
+            if (pid == 0) {
+        	if (clist.commands[i].input_file) {
+            		int in_fd = open(clist.commands[i].input_file, O_RDONLY);
+            		if (in_fd < 0) {
+                		perror("Input redirection failed");
+                		exit(errno);
+            		}
+            		dup2(in_fd, STDIN_FILENO);
+           		close(in_fd);
+        	}
+
+        	if (clist.commands[i].output_file) {
+		    int out_fd;
+    			if (clist.commands[i].append_mode) {
+        			out_fd = open(clist.commands[i].output_file, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    			} else {
+        			out_fd = open(clist.commands[i].output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    			}	
+    
+   		if (out_fd < 0) {
+        		perror("open output");
+        		exit(errno);
+   		 }
+    		dup2(out_fd, STDOUT_FILENO);
+    		close(out_fd);
+		}
+
+
                 if (i > 0) {
                     if (dup2(pipefds[(i - 1) * 2], STDIN_FILENO) < 0) {
                         perror("dup2 input");

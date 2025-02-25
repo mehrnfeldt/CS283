@@ -81,7 +81,7 @@ ls
 EOF
 
      stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
+    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefileout.txtreadme.mddsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -335,7 +335,7 @@ EOF
     run ./dsh <<EOF
 ls | cat
 EOF
-    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
+    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefileout.txtreadme.mddsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -409,7 +409,7 @@ EOF
 ls | ls | ls | ls | ls | ls | ls | ls 
 EOF
 
-    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
+    stripped_output=$(echo "$output" | tr -d '[:space:]')    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefileout.txtreadme.mddsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -441,7 +441,7 @@ ls |
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')    
-    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
+    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefileout.txtreadme.mddsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
@@ -457,7 +457,73 @@ EOF
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefilereadme.mddsh3>dsh3>cmdloopreturned0"
+    expected_output="batsdragon.cdshdsh_cli.cdshlib.cdshlib.hmakefileout.txtreadme.mddsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "output redirection works as intended" {
+    run ./dsh <<EOF
+echo hello! > out.txt
+cat out.txt
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="hello!dsh3>dsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "input redirection works as intended" {
+    run ./dsh <<EOF
+cat < out.txt
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="hello!dsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "input redirection works as intended T2" {
+    run ./dsh <<EOF
+wc -w < out.txt
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="1dsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test ">> workds as intended" {
+    run ./dsh <<EOF
+echo this is line 2 >> out.txt
+cat out.txt
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="hello!thisisline2dsh3>dsh3>dsh3>cmdloopreturned0"
     echo "Captured stdout:"
     echo "Output: $output"
     echo "Exit Status: $status"
