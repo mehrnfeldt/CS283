@@ -154,8 +154,8 @@ int boot_server(char *ifaces, int port){
     printf("Binding server socket to address\n");
     printf("Binding to address: %s, port: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
-    ret = bind(svr_socket, (struct sockaddr *)&addr, sizeof(addr));
-   
+    //ret = bind(svr_socket, (struct sockaddr *)&addr, sizeof(addr));
+    ret = bind(svr_socket, (const struct sockaddr *) &addr, sizeof(addr));   
     if (ret == -1) {
         perror("bind");
         close(svr_socket);
@@ -234,7 +234,7 @@ int process_cli_requests(int svr_socket){
         
 	if (cli_socket == -1) {
             perror("accept error");
-            continue;  // Continue to try accepting new connections
+            continue;
         } else {
 		printf("ACCEPTED");
 	}

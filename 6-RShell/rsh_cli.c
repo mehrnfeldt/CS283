@@ -199,6 +199,7 @@ int start_client(char *server_ip, int port){
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);  // Convert port to network byte order
     ret = inet_pton(AF_INET, server_ip, &addr.sin_addr);
+    
     if (ret <= 0) {
         perror("inet_pton");
         close(cli_socket);
