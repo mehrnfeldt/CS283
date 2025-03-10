@@ -5,10 +5,10 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/wait.h>
 
 #include "dshlib.h"
-
 
 
 #include <stdlib.h>
@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/wait.h>
 
 #include "dshlib.h"

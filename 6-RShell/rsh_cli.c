@@ -10,11 +10,12 @@
 #include "dshlib.h"
 #include "rshlib.h"
 
+#define MAX_CMD_SIZE 1024
+#define MAX_RSP_SIZE 2048
 
 
 
-/*
- * exec_remote_cmd_loop(server_ip, port)
+ /* exec_remote_cmd_loop(server_ip, port)
  *      server_ip:  a string in ip address format, indicating the servers IP
  *                  address.  Note 127.0.0.1 is the default meaning the server
  *                  is running on the same machine as the client
@@ -99,6 +100,12 @@ int exec_remote_cmd_loop(char *address, int port)
 
     // TODO set up cmd and response buffs
 
+    cmd_buff = (char *)malloc(MAX_CMD_SIZE);
+    rsp_buff = (char *)malloc(MAX_RSP_SIZE);
+    if (!cmd_buff || !rsp_buff) {
+         return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
+    }
+
     cli_socket = start_client(address,port);
     if (cli_socket < 0){
         perror("start client");
@@ -108,14 +115,44 @@ int exec_remote_cmd_loop(char *address, int port)
     while (1) 
     {
         // TODO print prompt
+	printf("Remote Shell> ");
 
         // TODO fgets input
+	if (fgets(cmd_buff, MAX_CMD_SIZE, stdin) == NULL) {
+ 	   break;  // Exit on EOF
+	}
 
         // TODO send() over cli_socket
+	if (send(cli_socket, cmd_buff, strlen(cmd_buff), 0) < 0) {
+    	    return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+	}
+
 
         // TODO recv all the results
 
+	ssize_t recv_bytes;
+int is_eof = 0;
+while (1) {
+    recv_bytes = recv(cli_socket, rsp_buff, MAX_RSP_SIZE, 0);
+    if (recv_bytes < 0) {
+        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+    }
+    if (recv_bytes == 0) {
+        break;  // Server disconnected
+    }
+
+    printf("%.*s", (int)recv_bytes, rsp_buff);
+
+    // Check if the response ends with EOF character
+    is_eof = (rsp_buff[recv_bytes-1] == RDSH_EOF_CHAR);
+    if (is_eof) {
+        break;
+    }
+}
         // TODO break on exit command
+	if (strncmp(cmd_buff, "exit", 4) == 0) {
+    break;  // Exit the loop
+}
     }
 
     return client_cleanup(cli_socket, cmd_buff, rsp_buff, OK);
@@ -150,7 +187,31 @@ int start_client(char *server_ip, int port){
     int ret;
 
     // TODO set up cli_socket
+	// Step 1: Create the client socket
+    cli_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (cli_socket < 0) {
+        perror("socket");
+        return ERR_RDSH_CLIENT;
+    }
 
+    // Step 2: Set up the server address structure
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);  // Convert port to network byte order
+    ret = inet_pton(AF_INET, server_ip, &addr.sin_addr);
+    if (ret <= 0) {
+        perror("inet_pton");
+        close(cli_socket);
+        return ERR_RDSH_CLIENT;
+    }
+
+    // Step 3: Connect to the server
+    ret = connect(cli_socket, (struct sockaddr *)&addr, sizeof(addr));
+    if (ret < 0) {
+        perror("connect");
+        close(cli_socket);
+        return ERR_RDSH_CLIENT;
+    }
 
     return cli_socket;
 }
