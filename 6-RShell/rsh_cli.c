@@ -127,32 +127,29 @@ int exec_remote_cmd_loop(char *address, int port)
     	    return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
 	}
 
-
         // TODO recv all the results
 
 	ssize_t recv_bytes;
-int is_eof = 0;
-while (1) {
-    recv_bytes = recv(cli_socket, rsp_buff, MAX_RSP_SIZE, 0);
-    if (recv_bytes < 0) {
-        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
-    }
-    if (recv_bytes == 0) {
-        break;  // Server disconnected
-    }
+	int is_eof = 0;
+	while (1) {
+   		recv_bytes = recv(cli_socket, rsp_buff, MAX_RSP_SIZE, 0);
+    		if (recv_bytes < 0) {
+        		return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+    		}
+    		if (recv_bytes == 0) {
+        		break;
+    		}
 
-    printf("%.*s", (int)recv_bytes, rsp_buff);
-
-    // Check if the response ends with EOF character
-    is_eof = (rsp_buff[recv_bytes-1] == RDSH_EOF_CHAR);
-    if (is_eof) {
-        break;
-    }
-}
+    		printf("%.*s", (int)recv_bytes, rsp_buff);
+    		is_eof = (rsp_buff[recv_bytes-1] == RDSH_EOF_CHAR);
+    		if (is_eof) {
+       			break;
+   		}
+	}
         // TODO break on exit command
 	if (strncmp(cmd_buff, "exit", 4) == 0) {
-    break;  // Exit the loop
-}
+    		break;  
+	}
     }
 
     return client_cleanup(cli_socket, cmd_buff, rsp_buff, OK);
@@ -187,17 +184,15 @@ int start_client(char *server_ip, int port){
     int ret;
 
     // TODO set up cli_socket
-	// Step 1: Create the client socket
     cli_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (cli_socket < 0) {
         perror("socket");
         return ERR_RDSH_CLIENT;
     }
 
-    // Step 2: Set up the server address structure
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);  // Convert port to network byte order
+    addr.sin_port = htons(port);  
     ret = inet_pton(AF_INET, server_ip, &addr.sin_addr);
     
     if (ret <= 0) {
@@ -206,7 +201,6 @@ int start_client(char *server_ip, int port){
         return ERR_RDSH_CLIENT;
     }
 
-    // Step 3: Connect to the server
     ret = connect(cli_socket, (struct sockaddr *)&addr, sizeof(addr));
     if (ret < 0) {
         perror("connect");

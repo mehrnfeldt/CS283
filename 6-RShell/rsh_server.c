@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <fcntl.h>
+#include <errno.h>
 
 //INCLUDES for extra credit
 //#include <signal.h>
@@ -132,18 +133,16 @@ int boot_server(char *ifaces, int port){
         return ERR_RDSH_COMMUNICATION;
     }
 
-    printf("Creating server socket...\n");
-    // Step 2: Set socket options (optional but recommended)
+    printf("Debug: Create server socket\n");
     int opt = 1;
     setsockopt(svr_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    printf("Setting socket options...\n");
-    // Step 3: Bind the socket to the provided address and port
+    printf("Debug: Setting socket options\n");
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     if (ifaces == NULL) {
-        addr.sin_addr.s_addr = INADDR_ANY;  // Listen on all interfaces
+        addr.sin_addr.s_addr = INADDR_ANY;
     } else {
         if (inet_pton(AF_INET, ifaces, &addr.sin_addr) <= 0) {
             perror("inet_pton");
@@ -151,8 +150,8 @@ int boot_server(char *ifaces, int port){
             return ERR_RDSH_COMMUNICATION;
         }
     }
-    printf("Binding server socket to address\n");
-    printf("Binding to address: %s, port: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+    
+    printf("Debug: Binding to address: %s, port: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
     //ret = bind(svr_socket, (struct sockaddr *)&addr, sizeof(addr));
     ret = bind(svr_socket, (const struct sockaddr *) &addr, sizeof(addr));   
@@ -161,7 +160,7 @@ int boot_server(char *ifaces, int port){
         close(svr_socket);
         return ERR_RDSH_COMMUNICATION;
     }else{
-	    printf("Bind good\n");
+	printf("Debug: Bind Good\n");
      }
 
     ret = listen(svr_socket, 20);
@@ -170,8 +169,9 @@ int boot_server(char *ifaces, int port){
         perror("listen");
         return ERR_RDSH_COMMUNICATION;
     }else{
-	    printf("listen good\n");
+	printf("Debug: Listen Good\n");
     }
+    printf("Debug: svr socket = %d\n", svr_socket);
 
     return svr_socket;
 }
@@ -227,25 +227,21 @@ int process_cli_requests(int svr_socket){
     while(1){
         // TODO use the accept syscall to create cli_socket 
         // and then exec_client_requests(cli_socket)
-    	printf("Waiting for client connection...\n");
+    	printf("Debug: Waiting for client connection\n");
 	cli_socket = accept(svr_socket, (struct sockaddr*) &cli_addr, &cli_len);
-	printf("After accept(), cli_socket = %d\n", cli_socket);
+	printf("Debug: After accept(), cli_socket = %d\n", cli_socket);
         
         
-	if (cli_socket == -1) {
+	if (cli_socket == -1) {	
+	    printf("Debug: errno = %d\n", errno);  // Print error code	
             perror("accept error");
             continue;
         } else {
-		printf("ACCEPTED");
+            printf("Debug: ACCEPTED");
 	}
 
-
-        // Process client requests
         rc = exec_client_requests(cli_socket);
-
-        // Close the client socket after processing
         close(cli_socket);
-    
     }
 
     stop_server(cli_socket);
@@ -320,42 +316,38 @@ int exec_client_requests(int cli_socket) {
 
         // TODO send_message_eof when done
     
-    	// Receive data from the client
-        io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0);
+    	io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0);
         if (io_size <= 0) {
             free(io_buff);
-            return ERR_RDSH_COMMUNICATION; // handle socket error or disconnection
+            return ERR_RDSH_COMMUNICATION;
         }
 
-        // Parse the received command into a list of commands
         rc = build_cmd_list(io_buff, &cmd_list);
         if (rc != OK) {
-            // Handle build command list error
             free(io_buff);
             return rc;
         }
 
-        // Execute the command pipeline
         cmd_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
 
-	printf("Executing command...\n");
-        // Send the response back to the client
+	printf("Debug: Executing command\n");
+        
         if (cmd_rc != OK) {
             send_message_string(cli_socket, "ERROR: Command execution failed.");
         } else {
             send_message_string(cli_socket, "Command executed successfully.");
         }
 
-        // Send EOF to indicate that the output is finished
+        
         send_message_eof(cli_socket);
 
-        // Check for special commands
+        
         if (strcmp(io_buff, "exit") == 0) {
             free(io_buff);
-            return OK; // Exit and handle the next client connection
+            return OK; 
         } else if (strcmp(io_buff, "stop-server") == 0) {
             free(io_buff);
-            return OK_EXIT; // Stop the server
+            return OK_EXIT; 
         }
     
     
@@ -414,14 +406,12 @@ int send_message_string(int cli_socket, char *buff){
     ssize_t sent_bytes;
     size_t message_len = strlen(buff);
 
-    // Send the main message
     sent_bytes = send(cli_socket, buff, message_len, 0);
     if (sent_bytes == -1) {
         perror("send");
         return ERR_RDSH_COMMUNICATION;
     }
 
-    // Send EOF marker to indicate end of message
     if (send_message_eof(cli_socket) != OK) {
         return ERR_RDSH_COMMUNICATION;
     }
@@ -476,7 +466,6 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     Built_In_Cmds bi_cmd;
     int exit_code;
 
-    // Create all necessary pipes
     for (int i = 0; i < clist->num - 1; i++) {
         if (pipe(pipes[i]) == -1) {
             perror("pipe");
@@ -495,27 +484,23 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
         }
 
         if (pids[i] == 0) {  // Child process
-            // First command in the pipeline, use cli_sock for STDIN and STDOUT
             if (i == 0) {
-                dup2(cli_sock, STDIN_FILENO); // Connect cli_sock to STDIN
+                dup2(cli_sock, STDIN_FILENO); 
             } else {
-                dup2(pipes[i - 1][0], STDIN_FILENO);  // Previous process' pipe
+                dup2(pipes[i - 1][0], STDIN_FILENO);  
             }
 
             if (i == clist->num - 1) {
-                // Last command in the pipeline, use cli_sock for STDERR
-                dup2(cli_sock, STDERR_FILENO); // Connect cli_sock to STDERR
+                dup2(cli_sock, STDERR_FILENO);
             } else {
-                dup2(pipes[i][1], STDOUT_FILENO);  // Current process' pipe
-            }
+                dup2(pipes[i][1], STDOUT_FILENO);  
+	    }
 
-            // Close all pipe file descriptors in the child
             for (int j = 0; j < clist->num - 1; j++) {
                 close(pipes[j][0]);
                 close(pipes[j][1]);
             }
 
-            // Execute the command
             execvp(clist->commands[i].argv[0], clist->commands[i].argv);
             perror("execvp failed");
             exit(EXIT_FAILURE);
